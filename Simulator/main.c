@@ -1,6 +1,10 @@
 #include "header.h"
-
 int main() {
-	printf("This is a test \n");
+	printf("Start test\n");
+	// creating genesis block //
+	struct block GENESIS;
+
 	return 0;
 }
+
+
