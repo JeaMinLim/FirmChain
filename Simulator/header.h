@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 struct block {
 	// Header Start //
@@ -18,6 +19,6 @@ struct block {
 struct node {
 	char name[20];
 	char model_name[4];
-	int firmware_version;
+	char firmware_version[4];
 	char verifier[32]; 
 };
