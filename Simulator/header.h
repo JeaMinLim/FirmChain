@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/queue.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+const int MAX_NODE=7;
 
 struct block {
 	// Header Start //
@@ -14,7 +19,8 @@ struct block {
 	char model[4];
 	int firmware_version;
 	char verifier[32];
-};
+	SLIST_ENTRY(block) blocks;
+} *GENESIS;
 
 struct node {
 	char name[20];
