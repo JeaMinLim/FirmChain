@@ -10,8 +10,14 @@ struct block {
 	int verification_count;
 	char merkle_tree[4];
 	char verification_log[4];
-	int model;
+	char model[4];
 	int firmware_version;
 	char verifier[32];
 };
 
+struct node {
+	char name[20];
+	char model_name[4];
+	int firmware_version;
+	char verifier[32]; 
+};
