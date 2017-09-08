@@ -3,6 +3,7 @@
 #include <sys/queue.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 const int MAX_NODE=7;
 

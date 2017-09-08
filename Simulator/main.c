@@ -47,6 +47,11 @@ int request_check(struct node local, struct node remote) {
 	return 0;	
 }
 
+void* t_function(void *data) {
+	int i = 0;
+	printf(":::- thread!\n");
+}
+
 int main() {
 	char tmp[10] = {0,};
 	printf("Start test\n");
@@ -82,20 +87,26 @@ int main() {
 		sprintf(tmp, "%d", i);
 		strncpy(DEVICE_info[i].name, tmp, sizeof(DEVICE_info[i].name));
 	}
-	/*
-	int thread_id;
+		
+	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0].name, DEVICE_info[0].model_name, DEVICE_info[0].firmware_version);
+	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1].name, DEVICE_info[1].model_name, DEVICE_info[1].firmware_version);
+	//////////////////////////////////////////////////////////////////
+	int thread_id, status;
 	pthread_t p_thread[MAX_NODE];
-	thread_id = pthread_create(&p_thread[0], NULL, t_function, (void *)&a);
-    if (thr_id < 0)
-    {
+	int a = 100;
+	printf("::: Create Thread \n");
+	thread_id = pthread_create(&p_thread[0], NULL, t_function, (void *)&DEVICE_info[0]);
+	thread_id = pthread_create(&p_thread[1], NULL, t_function, (void *)&DEVICE_info[1]);
+    if (thread_id < 0) {
         perror("thread create error : ");
         exit(0);
     }
-	*/
-	//
-	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0].name, DEVICE_info[0].model_name, DEVICE_info[0].firmware_version);
-	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1].name, DEVICE_info[1].model_name, DEVICE_info[1].firmware_version);
-
+	
+	pthread_join(p_thread[0], (void *) &status);
+	pthread_join(p_thread[1], (void *) &status);
+	
+	//////////////////////////////////////////////////////////////////
+	
 	self_check(DEVICE_info[0]);
 	request_check(DEVICE_info[0], DEVICE_info[1]);
 	
