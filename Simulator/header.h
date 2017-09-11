@@ -9,6 +9,7 @@ const int MAX_NODE=7;
 
 struct block {
 	// Header Start //
+	SLIST_ENTRY(block) nxt_ptr;
 	float size;	
 	int version;
 	char prev_hash[32];
@@ -20,7 +21,6 @@ struct block {
 	char model[4];
 	int firmware_version;
 	char verifier[32];
-	SLIST_ENTRY(block) blocks;
 } *GENESIS;
 
 struct node {

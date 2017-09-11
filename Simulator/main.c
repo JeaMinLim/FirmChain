@@ -1,6 +1,9 @@
 #include "header.h"
 
 struct node INFO;
+SLIST_HEAD(BLOCKCHAIN, block) BLOCKCHAIN_LIST;
+//SLIST_HEAD(header, block) head = SLIST_HEAD_INITIALIZER(head);
+//struct block *headp;       
 
 int self_check(struct node NODE_INFO) {
 	if (strncmp(NODE_INFO.model_name, INFO.model_name, sizeof(INFO.model_name-1))) {
@@ -47,6 +50,12 @@ int request_check(struct node local, struct node remote) {
 	return 0;	
 }
 
+int add_block(struct node data) {
+	struct node *new_block = malloc(sizeof(struct node));
+	//SLIST_INSERT_AFTER(&head, new_block, BLOCKCHAIN);
+	free(new_block);
+}
+
 void* t_function(void *data) {
 	int i = 0;
 	printf(":::- thread!\n");
@@ -58,8 +67,8 @@ int main() {
 	printf(": creating GENESIS Block \n");
 	
 	// creating genesis block //
-	SLIST_HEAD(slisthead, block) head = SLIST_HEAD_INITIALIZER(head);
-	SLIST_INIT(&head);
+	
+	SLIST_INIT(&BLOCKCHAIN_LIST);
 	GENESIS = malloc(sizeof(struct block));
 	GENESIS->version = 0.1;
 	GENESIS->prev_hash[0] = '\0';
@@ -70,6 +79,8 @@ int main() {
 	GENESIS->model[0] = '\0';
 	GENESIS->firmware_version = 0;
 	GENESIS->verifier[0] = '\0';
+	SLIST_INSERT_HEAD(&BLOCKCHAIN_LIST, GENESIS, nxt_ptr);
+
 	printf(": Genesis Block is ready \n");
 
 	// create node info //
@@ -91,6 +102,7 @@ int main() {
 	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0].name, DEVICE_info[0].model_name, DEVICE_info[0].firmware_version);
 	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1].name, DEVICE_info[1].model_name, DEVICE_info[1].firmware_version);
 	//////////////////////////////////////////////////////////////////
+	/*
 	int thread_id, status;
 	pthread_t p_thread[MAX_NODE];
 	int a = 100;
@@ -104,19 +116,21 @@ int main() {
 	
 	pthread_join(p_thread[0], (void *) &status);
 	pthread_join(p_thread[1], (void *) &status);
-	
+	*/
 	//////////////////////////////////////////////////////////////////
 	
 	self_check(DEVICE_info[0]);
 	request_check(DEVICE_info[0], DEVICE_info[1]);
 	
 	// delete list
-	while (!SLIST_EMPTY(&head)) { 
+	/*
+	while (!SLIST_EMPTY(&BLOCKCHAIN_LIST)) { 
 		printf(": Delete List");
-    	GENESIS = SLIST_FIRST(&head);
-        SLIST_REMOVE_HEAD(&head, blocks);
+    	GENESIS = SLIST_FIRST(&BLOCKCHAIN_LIST);
+        SLIST_REMOVE_HEAD(&BLOCKCHAIN_LIST, BLOCKCHAIN);
         free(GENESIS);
     }
+	*/
 	// end thread
 	//pthread_join(p_thread[0], (void **)&status);
     //pthread_join(p_thread[1], (void **)&status);
