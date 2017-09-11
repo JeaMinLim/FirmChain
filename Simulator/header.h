@@ -9,7 +9,7 @@ const int MAX_NODE=7;
 
 struct block {
 	// Header Start //
-	SLIST_ENTRY(block) nxt_ptr;
+	struct block *ptr;
 	float size;	
 	int version;
 	char prev_hash[32];

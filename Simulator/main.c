@@ -1,10 +1,9 @@
 #include "header.h"
 
-struct node INFO;
-SLIST_HEAD(BLOCKCHAIN, block) BLOCKCHAIN_LIST;
-//SLIST_HEAD(header, block) head = SLIST_HEAD_INITIALIZER(head);
-//struct block *headp;       
+struct node *INFO;
+struct block *block_ptr;
 
+/*
 int self_check(struct node NODE_INFO) {
 	if (strncmp(NODE_INFO.model_name, INFO.model_name, sizeof(INFO.model_name-1))) {
 		printf(":: SELF_CHECK - Firmware Info is changed, model_name\n");
@@ -21,6 +20,7 @@ int self_check(struct node NODE_INFO) {
 	printf(":: SELF_CHECK - Firmware Info is NOT changed\n");
 	return 0;
 }
+*/
 
 int request_check(struct node local, struct node remote) {
 	if (strncmp(local.model_name, remote.model_name, sizeof(local.model_name-1))) {
@@ -50,11 +50,50 @@ int request_check(struct node local, struct node remote) {
 	return 0;	
 }
 
-int add_block(struct node data) {
-	struct node *new_block = malloc(sizeof(struct node));
-	//SLIST_INSERT_AFTER(&head, new_block, BLOCKCHAIN);
-	free(new_block);
+struct block *create_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) {
+	// to create GENESIS BLOCK
+	struct block *BLOCK_ = malloc(sizeof(struct block));
+	BLOCK_->size = _size;
+	BLOCK_->version = _version;
+	strncpy(BLOCK_->prev_hash, "_prev_hash", sizeof(BLOCK_->prev_hash));
+	BLOCK_->merkle_root[0] = _merkle_root;
+	BLOCK_->verification_count = _verification_count;
+	strncpy(BLOCK_->merkle_tree, "_merkle_tree", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->verification_log, "_verification_log", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->model, "_model", sizeof(BLOCK_->model));
+	BLOCK_->firmware_version = _firmware_version;
+	strncpy(BLOCK_->verifier, "_verifier", sizeof(BLOCK_->verifier));
+	//BLOCK_->ptr = BLOCK_;
+	return BLOCK_;
 }
+
+int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier, struct block *_prev_block) { 
+	// for adding blocks at the bockchain //
+	struct block *BLOCK_ = malloc(sizeof(struct block));
+	BLOCK_->size = _size;
+	BLOCK_->version = _version;
+	strncpy(BLOCK_->prev_hash, "_prev_hash", sizeof(BLOCK_->prev_hash));
+	BLOCK_->merkle_root[0] = _merkle_root;
+	BLOCK_->verification_count = _verification_count;
+	strncpy(BLOCK_->merkle_tree, "_merkle_tree", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->verification_log, "_verification_log", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->model, "_model", sizeof(BLOCK_->model));
+	BLOCK_->firmware_version = _firmware_version;
+	strncpy(BLOCK_->verifier, "_verifier", sizeof(BLOCK_->verifier));
+	_prev_block->ptr = BLOCK_;
+	BLOCK_->ptr = BLOCK_;
+	return BLOCK_;
+}
+
+struct node *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
+	struct node *NODE_ = (struct node*)malloc(sizeof(struct node));
+	strncpy(NODE_->name, _name, sizeof(NODE_->name));
+	strncpy(NODE_->model_name, _model_name, sizeof(NODE_->model_name));
+	strncpy(NODE_->firmware_version, _firmware_version, sizeof(NODE_->firmware_version));
+	strncpy(NODE_->verifier, _verifier, sizeof(NODE_->verifier));
+	return NODE_;
+}
+
 
 void* t_function(void *data) {
 	int i = 0;
@@ -63,44 +102,48 @@ void* t_function(void *data) {
 
 int main() {
 	char tmp[10] = {0,};
-	printf("Start test\n");
+	
 	printf(": creating GENESIS Block \n");
 	
 	// creating genesis block //
-	
-	SLIST_INIT(&BLOCKCHAIN_LIST);
-	GENESIS = malloc(sizeof(struct block));
-	GENESIS->version = 0.1;
-	GENESIS->prev_hash[0] = '\0';
-	GENESIS->merkle_root[0] = 0;
-	GENESIS->verification_count = 0;
-	GENESIS->merkle_tree[0] = '\0';
-	GENESIS->verification_log[0] = '\0';
-	GENESIS->model[0] = '\0';
-	GENESIS->firmware_version = 0;
-	GENESIS->verifier[0] = '\0';
-	SLIST_INSERT_HEAD(&BLOCKCHAIN_LIST, GENESIS, nxt_ptr);
-
+	GENESIS = create_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0');
+	block_ptr = GENESIS;
 	printf(": Genesis Block is ready \n");
+	
+	
+	////// FOR DEBUGING BLOCKCHAINS //
+	/*
+	//block_ptr = add_block(0.1, 1, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
+		block_ptr = GENESIS;
+	printf(":::: = %d", block_ptr->version);
+	block_ptr = block_ptr->ptr;
+	printf(":::: = %d", block_ptr->version);
+	//////
+	*/
 
 	// create node info //
-	
+	/*
 	strncpy(INFO.name, "INFOMATION\0", sizeof(INFO.name));
 	strncpy(INFO.model_name, "XU\0", sizeof(INFO.model_name));
 	strncpy(INFO.firmware_version, "1402", sizeof(INFO.firmware_version));
 	strncpy(INFO.verifier, "6c3d0216f7fd482cdac2aa054af61065", sizeof(INFO.verifier));
 	printf(":: name-%s, model-%s, ver/hash-%s\n", INFO.name, INFO.model_name, INFO.firmware_version);
+	*/
+	
+	INFO = create_node("INFOMATION\0", "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
+	printf(":: name-%s, model-%s, ver/hash-%s\n", INFO->name, INFO->model_name, INFO->firmware_version);
+	
 	
 	// create nodes //
-	struct node DEVICE_info[MAX_NODE];
+	struct node *DEVICE_info[MAX_NODE];
 	for(int i=0; i<MAX_NODE; i++) {
-		memcpy(&DEVICE_info[i], &INFO, sizeof(struct node));
 		sprintf(tmp, "%d", i);
-		strncpy(DEVICE_info[i].name, tmp, sizeof(DEVICE_info[i].name));
+		DEVICE_info[i] = create_node(tmp, "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
+		//strncpy(DEVICE_info[i].name, tmp, sizeof(DEVICE_info[i].name));
 	}
 		
-	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0].name, DEVICE_info[0].model_name, DEVICE_info[0].firmware_version);
-	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1].name, DEVICE_info[1].model_name, DEVICE_info[1].firmware_version);
+	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0]->name, DEVICE_info[0]->model_name, DEVICE_info[0]->firmware_version);
+	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1]->name, DEVICE_info[1]->model_name, DEVICE_info[1]->firmware_version);
 	//////////////////////////////////////////////////////////////////
 	/*
 	int thread_id, status;
@@ -119,8 +162,8 @@ int main() {
 	*/
 	//////////////////////////////////////////////////////////////////
 	
-	self_check(DEVICE_info[0]);
-	request_check(DEVICE_info[0], DEVICE_info[1]);
+	//self_check(DEVICE_info[0]);
+	//request_check(DEVICE_info[0], DEVICE_info[1]);
 	
 	// delete list
 	/*
