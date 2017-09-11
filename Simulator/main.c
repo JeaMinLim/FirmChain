@@ -22,29 +22,30 @@ int self_check(struct node NODE_INFO) {
 }
 */
 
-int request_check(struct node local, struct node remote) {
-	if (strncmp(local.model_name, remote.model_name, sizeof(local.model_name-1))) {
-		printf(":: REQUEST_CHECK - Firmware Model is different\n");
-		return 1;
-	} 
-	
+void select_attacker(struct node *data) {
+	strncpy(data->firmware_version, "1500", sizeof(data->firmware_version));
+}
+
+int version_check(struct node *local, struct node *remote) {
 	char local_version[5];
 	char remote_version[5];
 	//printf(":: name: %s %s\n", local.firmware_version, remote.firmware_version);
-	strncpy(local_version, local.firmware_version, sizeof(local_version)-1);
-	strncpy(remote_version, remote.firmware_version, sizeof(remote_version)-1);
+	strncpy(local_version, local->firmware_version, sizeof(local_version));
+	strncpy(remote_version, remote->firmware_version, sizeof(remote_version));
 	//printf(":: name: %s %s\n", local_version, remote_version);
 	int version_local = atoi(local_version);
 	int version_remote = atoi(remote_version);
-		
+	
 	if (version_local == version_remote) {
-		printf(":: REQUEST_CHECK - firmware version is the same\n");
-		return 1;
+		printf(":: VERSION_CHECK - firmware version is the same\n");
+		return 0;
 	} else {
 		if (version_local < version_remote) {
-			printf(":: REQUEST_CHECK - firmware update: local\n");
+			printf(":: VERSION_CHECK - firmware update: local\n");
+			return -1;
 		} else if (version_local > version_remote) {
-			printf(":: REQUEST_CHECK - firmware update: remote\n");
+			printf(":: VERSION_CHECK - firmware update: remote\n");
+			return 1;
 		}
 	}
 	return 0;	
@@ -94,10 +95,14 @@ struct node *create_node(char *_name, char *_model_name, char *_firmware_version
 	return NODE_;
 }
 
-
-void* t_function(void *data) {
-	int i = 0;
-	printf(":::- thread!\n");
+void* t_function(void *_data) {
+	struct node *NODE_info_ = _data;
+	char tmp[4];
+	strncpy(tmp, NODE_info_->firmware_version, sizeof(NODE_info_->firmware_version));
+	
+	for(int i = 0; i<10; i++) {
+		printf(":::- thread %s is version %d \n", NODE_info_->name, atoi(tmp));
+	}
 }
 
 int main() {
@@ -109,7 +114,6 @@ int main() {
 	GENESIS = create_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0');
 	block_ptr = GENESIS;
 	printf(": Genesis Block is ready \n");
-	
 	
 	////// FOR DEBUGING BLOCKCHAINS //
 	/*
@@ -144,10 +148,40 @@ int main() {
 		
 	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0]->name, DEVICE_info[0]->model_name, DEVICE_info[0]->firmware_version);
 	printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1]->name, DEVICE_info[1]->model_name, DEVICE_info[1]->firmware_version);
+	//////////////////////////////////////
+	
+	//////////////////////////////////////
+	int thread_id, status;
+	pthread_t p_thread[MAX_NODE];
+	//int tmp_max_node = 2;
+	//pthread_t p_thread[tmp_max_node];
+	for(int i=0; i<MAX_NODE; i++) {
+		thread_id = pthread_create(&p_thread[i], NULL, t_function, (void *)DEVICE_info[i]);
+		if(i != 0) {
+			select_attacker(DEVICE_info[i]);
+		}
+		printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
+		
+	}
+	if (thread_id < 0) {
+        perror("thread create error : ");
+        exit(0);
+    }
+	
+	///////////////////////////////////////
+	for(int i=0; i<MAX_NODE; i++) {
+		pthread_join(p_thread[i], (void **)&status);
+		printf("::: kill Thread %d \n", i);
+	}
+	
+	
+	
+	//printf("::: request result = %d \n", request_check(DEVICE_info[0], DEVICE_info[1]));
+		
 	//////////////////////////////////////////////////////////////////
 	/*
 	int thread_id, status;
-	pthread_t p_thread[MAX_NODE];
+	
 	int a = 100;
 	printf("::: Create Thread \n");
 	thread_id = pthread_create(&p_thread[0], NULL, t_function, (void *)&DEVICE_info[0]);
