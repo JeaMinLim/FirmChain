@@ -27,5 +27,6 @@ struct node {
 	char name[20];
 	char model_name[4];
 	char firmware_version[4];
-	char verifier[32]; 
+	char verifier[32];
+	int versioncheck_request
 };
