@@ -68,7 +68,7 @@ struct block *create_block(float _size, int _version, char *_prev_hash, int _mer
 	return BLOCK_;
 }
 
-int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier, struct block *_prev_block) { 
+void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier, struct block *_prev_block) { 
 	// for adding blocks at the bockchain //
 	struct block *BLOCK_ = malloc(sizeof(struct block));
 	BLOCK_->size = _size;
@@ -83,7 +83,21 @@ int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int
 	strncpy(BLOCK_->verifier, "_verifier", sizeof(BLOCK_->verifier));
 	_prev_block->ptr = BLOCK_;
 	BLOCK_->ptr = BLOCK_;
-	return BLOCK_;
+	return (void *)BLOCK_;
+}
+
+void print_Blockchain() {
+	int i = 0;
+	struct block *block_ptr_;
+	block_ptr_ = GENESIS;
+	printf("::: - GENESIS block: %d \n", block_ptr_->version);
+	block_ptr_ = block_ptr_->ptr;
+	while(block_ptr_ != block_ptr_->ptr) {
+		i++;
+		printf("::: - %d block: %d \n", i, block_ptr_->version);
+		block_ptr_ = block_ptr_->ptr;
+	}
+	printf("::: - %d block: %d \n", i, block_ptr_->version);
 }
 
 struct node *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
@@ -115,16 +129,17 @@ int main() {
 	block_ptr = GENESIS;
 	printf(": Genesis Block is ready \n");
 	
-	////// FOR DEBUGING BLOCKCHAINS //
-	/*
-	//block_ptr = add_block(0.1, 1, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-		block_ptr = GENESIS;
-	printf(":::: = %d", block_ptr->version);
+		
+	block_ptr = add_block(0.1, 1, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
+	//block_ptr = GENESIS;
+	printf(":::: = %d\n", block_ptr->version);
 	block_ptr = block_ptr->ptr;
-	printf(":::: = %d", block_ptr->version);
+	printf(":::: = %d\n", block_ptr->version);
 	//////
-	*/
+	////// FOR DEBUGING BLOCKCHAINS //
 
+	print_Blockchain();
+	
 	// create node info //
 	/*
 	strncpy(INFO.name, "INFOMATION\0", sizeof(INFO.name));
