@@ -1,8 +1,5 @@
 #include "header.h"
 
-struct node *INFO;
-struct block *block_ptr;
-
 /*
 int self_check(struct node NODE_INFO) {
 	if (strncmp(NODE_INFO.model_name, INFO.model_name, sizeof(INFO.model_name-1))) {
@@ -21,6 +18,7 @@ int self_check(struct node NODE_INFO) {
 	return 0;
 }
 */
+int request_flag[MAX_NODE_] = {0,};
 
 void select_attacker(struct node *data) {
 	strncpy(data->firmware_version, "1500", sizeof(data->firmware_version));
@@ -109,14 +107,34 @@ struct node *create_node(char *_name, char *_model_name, char *_firmware_version
 	return NODE_;
 }
 
+int check_req_version_chk() {
+	//printf("::: ! req_version_check, ");
+	for(int i = 0; i < MAX_NODE; i++) {
+		//printf(" %d", request_flag[i]);
+	}
+	//printf(" \n");
+	
+	for(int i = 0; i < MAX_NODE; i++) {
+		if(request_flag[i] != 0 ) {
+			return i;
+		}
+	} 
+}
+
 void* t_function(void *_data) {
 	struct node *NODE_info_ = _data;
 	char tmp[4];
+	int thr_num = atoi(NODE_info_->name);
 	strncpy(tmp, NODE_info_->firmware_version, sizeof(NODE_info_->firmware_version));
-	
+	printf(":::- thread %d is version %d \n", thr_num, atoi(tmp));
+	if (check_req_version_chk() != 0) {
+		
+	}
+	/*
 	for(int i = 0; i<10; i++) {
 		printf(":::- thread %s is version %d \n", NODE_info_->name, atoi(tmp));
 	}
+	*/
 }
 
 int main() {
@@ -126,15 +144,15 @@ int main() {
 	
 	// creating genesis block //
 	GENESIS = create_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0');
+	GENESIS->ptr = GENESIS;
 	block_ptr = GENESIS;
 	printf(": Genesis Block is ready \n");
 	
-		
-	block_ptr = add_block(0.1, 1, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
+	//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
 	//block_ptr = GENESIS;
-	printf(":::: = %d\n", block_ptr->version);
-	block_ptr = block_ptr->ptr;
-	printf(":::: = %d\n", block_ptr->version);
+	//printf(":::: = %d\n", block_ptr->version);
+	//block_ptr = block_ptr->ptr;
+	//printf(":::: = %d\n", block_ptr->version);
 	//////
 	////// FOR DEBUGING BLOCKCHAINS //
 
@@ -188,9 +206,7 @@ int main() {
 		pthread_join(p_thread[i], (void **)&status);
 		printf("::: kill Thread %d \n", i);
 	}
-	
-	
-	
+		
 	//printf("::: request result = %d \n", request_check(DEVICE_info[0], DEVICE_info[1]));
 		
 	//////////////////////////////////////////////////////////////////

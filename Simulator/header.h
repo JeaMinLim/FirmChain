@@ -5,7 +5,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#define MAX_NODE_ 7
 const int MAX_NODE=7;
+
+struct node *INFO;
+struct block *block_ptr;
 
 struct block {
 	// Header Start //
