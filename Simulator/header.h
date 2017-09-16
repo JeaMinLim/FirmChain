@@ -7,9 +7,11 @@
 
 #define MAX_NODE_ 7
 const int MAX_NODE=7;
+const int VICTIM_NODE = 6;
 
 struct node *INFO;
 struct block *block_ptr;
+struct node *DEVICE_info[MAX_NODE_];
 
 struct block {
 	// Header Start //
