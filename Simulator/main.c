@@ -18,6 +18,7 @@ int self_check(struct node NODE_INFO) {
 	return 0;
 }
 */
+
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 
@@ -26,7 +27,8 @@ void select_attacker(struct node *data) {
 }
 
 int firmware_update(struct node *from, struct node *to) {
-	
+	//char * strncpy ( char * destination, const char * source, size_t num );
+	strncpy(to->firmware_version, from->firmware_version, sizeof(to->firmware_version));
 }
 
 int version_check(struct node *local, struct node *remote) {
@@ -44,7 +46,7 @@ int version_check(struct node *local, struct node *remote) {
 	int num_remote = atoi(remote->name);
 	
 	if (version_local == version_remote) {
-		printf(":: VERSION_CHECK - firmware version is the same\n");
+		printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
 		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier);
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
@@ -177,7 +179,6 @@ void* t_function(void *_data) {
 		printf(":::- thread %d sleep!!!!!! \n", thr_num);
 		sleep(1);
 	}
-	
 	if (check_req_version_chk() == 0) {
 		//printf("::: setting thread %d as chk req\n", thr_num);
 		request_flag[thr_num] = 1;
@@ -255,7 +256,7 @@ int main() {
         perror("thread create error : ");
         exit(0);
     }
-	printf("::: VICTIM is %d", VICTIM_NODE);
+	printf("::: VICTIM is %d\n", VICTIM_NODE);
 	
 	///////////////////////////////////////
 	for(int i=0; i<MAX_NODE; i++) {
