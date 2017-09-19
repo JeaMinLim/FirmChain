@@ -22,6 +22,23 @@ int self_check(struct node NODE_INFO) {
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 
+void* remove_blockchain() {
+	struct block *ptr1;
+	struct block *ptr2;
+	
+	ptr1 = GENESIS;
+	ptr2 = ptr1->ptr;
+	
+	while(ptr1 != ptr2) {
+		printf(": free %p \n", ptr1);
+		free(ptr1);
+		ptr1 = ptr2;
+		ptr2 = ptr2->ptr;
+	}
+	printf(": free %p \n", ptr1);
+	free(ptr1);
+}
+
 struct block *create_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) {
 	// to create GENESIS BLOCK
 	struct block *BLOCK_ = malloc(sizeof(struct block));
@@ -42,7 +59,7 @@ struct block *create_block(float _size, int _version, char *_prev_hash, int _mer
 int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) { 
 	// for adding blocks at the bockchain //
 	struct block *BLOCK_ = malloc(sizeof(struct block));
-	printf("::::: ADD_BLOCK \n");
+	//printf("::::: ADD_BLOCK \n");
 	BLOCK_->size = _size;
 	BLOCK_->version = _version;
 	//strncpy(BLOCK_->prev_hash, "_prev_hash", sizeof(BLOCK_->prev_hash));
@@ -83,7 +100,7 @@ int version_check(struct node *local, struct node *remote) {
 	char local_version[5];
 	char remote_version[5];
 	//printf(":: name: %s %s\n", local.firmware_version, remote.firmware_version);
-	printf(":: local: %s remote: %s \n", local->name, remote->name);
+	//printf(":: local: %s remote: %s \n", local->name, remote->name);
 	strncpy(local_version, local->firmware_version, sizeof(local->firmware_version));
 	local_version[5] = '\0';
 	strncpy(remote_version, remote->firmware_version, sizeof(remote->firmware_version));
@@ -95,15 +112,15 @@ int version_check(struct node *local, struct node *remote) {
 	int num_remote = atoi(remote->name);
 	
 	if (version_local == version_remote) {
-		printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
+		//printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
 		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
 		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier);
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-	//void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier)
+		//void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier)
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
 		add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
-		printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
+		//printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
 		request_flag[num_local] = 0;
 		request_flag[num_remote] = 0;
 		
@@ -111,18 +128,18 @@ int version_check(struct node *local, struct node *remote) {
 		return 0;
 	} else {
 		if (version_local < version_remote) {
-			printf(":: VERSION_CHECK - firmware update: local\n");
+			//printf(":: VERSION_CHECK - firmware update: local\n");
 			firmware_update(remote, local);
 			if (version_check(local, remote) == 0 ) {
-				printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
+				//printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
 			}
 			lock = 0;
 			return -1;
 		} else if (version_local > version_remote) {
-			printf(":: VERSION_CHECK - firmware update: remote\n");
+			//printf(":: VERSION_CHECK - firmware update: remote\n");
 			firmware_update(local, remote);
 			if (version_check(remote, local) == 0 ) {
-				printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
+				//printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
 			}
 			lock = 0;
 			return 1;
@@ -228,7 +245,7 @@ void* t_function(void *_data) {
 		request_flag[thr_num] = 1;
 		
 	} else {
-		printf(":::: version check - thr %d req to %d \n", thr_num, check_req_version_chk() );
+		//printf(":::: version check - thr %d req to %d \n", thr_num, check_req_version_chk() );
 		version_check(DEVICE_info[thr_num], DEVICE_info[check_req_version_chk()]);
 	}
 	/*
@@ -257,7 +274,7 @@ int main() {
 	//////
 	////// FOR DEBUGING BLOCKCHAINS //
 
-	print_Blockchain();
+	//print_Blockchain();
 	
 	// create node info //
 	/*
@@ -344,6 +361,7 @@ int main() {
     //pthread_join(p_thread[1], (void **)&status);
 
 	print_Blockchain();
+	remove_blockchain();
 	
 	return 0;
 }
