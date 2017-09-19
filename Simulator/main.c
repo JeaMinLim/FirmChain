@@ -30,11 +30,11 @@ struct block *create_block(float _size, int _version, char *_prev_hash, int _mer
 	strncpy(BLOCK_->prev_hash, "GENESIS", sizeof(BLOCK_->prev_hash));
 	BLOCK_->merkle_root[0] = _merkle_root;
 	BLOCK_->verification_count = _verification_count;
-	strncpy(BLOCK_->merkle_tree, "GENESIS", sizeof(BLOCK_->merkle_tree));
-	strncpy(BLOCK_->verification_log, "GENESIS", sizeof(BLOCK_->merkle_tree));
-	strncpy(BLOCK_->model, "GENESIS", sizeof(BLOCK_->model));
+	strncpy(BLOCK_->merkle_tree, "-", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->verification_log, "-", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->model, "-", sizeof(BLOCK_->model));
 	BLOCK_->firmware_version = _firmware_version;
-	strncpy(BLOCK_->verifier, "GENESIS", sizeof(BLOCK_->verifier));
+	strncpy(BLOCK_->verifier, "-", sizeof(BLOCK_->verifier));
 	//BLOCK_->ptr = BLOCK_;
 	return BLOCK_;
 }
@@ -42,17 +42,20 @@ struct block *create_block(float _size, int _version, char *_prev_hash, int _mer
 int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) { 
 	// for adding blocks at the bockchain //
 	struct block *BLOCK_ = malloc(sizeof(struct block));
-	printf("::::: ADD_BLOCK");
+	printf("::::: ADD_BLOCK \n");
 	BLOCK_->size = _size;
 	BLOCK_->version = _version;
-	strncpy(BLOCK_->prev_hash, "prev_hash", sizeof(BLOCK_->prev_hash));
+	//strncpy(BLOCK_->prev_hash, "_prev_hash", sizeof(BLOCK_->prev_hash));
+	strncpy(BLOCK_->prev_hash, "-", sizeof(BLOCK_->prev_hash));
 	BLOCK_->merkle_root[0] = _merkle_root;
 	BLOCK_->verification_count = _verification_count;
-	strncpy(BLOCK_->merkle_tree, "_merkle_tree", sizeof(BLOCK_->merkle_tree));
-	strncpy(BLOCK_->verification_log, "_verification_log", sizeof(BLOCK_->verification_log));
-	strncpy(BLOCK_->model, "_model", sizeof(BLOCK_->model));
+	//strncpy(BLOCK_->merkle_tree, "_merkle_tree", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->merkle_tree, "-", sizeof(BLOCK_->merkle_tree));
+	strncpy(BLOCK_->verification_log, "-", sizeof(BLOCK_->verification_log));
+	strncpy(BLOCK_->model, _model, sizeof(BLOCK_->model));
+	//printf("_firmware_version: %d \n", _firmware_version);
 	BLOCK_->firmware_version = _firmware_version;
-	strncpy(BLOCK_->verifier, "_verifier", sizeof(BLOCK_->verifier));
+	strncpy(BLOCK_->verifier, _verifier, sizeof(BLOCK_->verifier));
 	
 	//move to end of Blockchain
 	block_ptr = GENESIS;
@@ -81,8 +84,10 @@ int version_check(struct node *local, struct node *remote) {
 	char remote_version[5];
 	//printf(":: name: %s %s\n", local.firmware_version, remote.firmware_version);
 	printf(":: local: %s remote: %s \n", local->name, remote->name);
-	strncpy(local_version, local->firmware_version, sizeof(local_version));
-	strncpy(remote_version, remote->firmware_version, sizeof(remote_version));
+	strncpy(local_version, local->firmware_version, sizeof(local->firmware_version));
+	local_version[5] = '\0';
+	strncpy(remote_version, remote->firmware_version, sizeof(remote->firmware_version));
+	remote_version[5] = '\0';
 	//printf(":: name: %s %s\n", local_version, remote_version);
 	int version_local = atoi(local_version);
 	int version_remote = atoi(remote_version);
@@ -92,6 +97,7 @@ int version_check(struct node *local, struct node *remote) {
 	if (version_local == version_remote) {
 		printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
+		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
 		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier);
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
 	//void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier)
@@ -134,19 +140,22 @@ void print_Blockchain() {
 	// copy info from block // 
 	float _size = block_ptr_->size;
 	int _version = block_ptr_->version;
-	char _prev_hash[32];
+	char _prev_hash[50];
 	strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(_prev_hash));
-	int _merkle_root[8] = {0,};
+	int _merkle_root[50] = {0,};
 	_merkle_root[0] = block_ptr_->merkle_root[0];
 	int _verification_count = block_ptr_->verification_count;
-	char _merkle_tree[4];
+	char _merkle_tree[50];
 	strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(_merkle_tree));
-	char _verification_log[4];
+	_merkle_tree[5] = '\0';
+	char _verification_log[50];
 	strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
-	char _model[4];
+	_verification_log[5] = '\0';
+	char _model[50];
 	strncpy(_model, block_ptr_->model, sizeof(_model));
+	_model[5] = '\0';
 	int _firmware_version = block_ptr_->firmware_version;
-	char _verifier[32];
+	char _verifier[50];
 	strncpy(_verifier, block_ptr_->verifier, sizeof(_verifier));
 	
 	///////////////////////
@@ -154,7 +163,21 @@ void print_Blockchain() {
 	block_ptr_ = block_ptr_->ptr;
 	while(block_ptr_ != block_ptr_->ptr) {
 		i++;
-		printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", i, block_ptr_->ptr, block_ptr_->size, block_ptr_->version, block_ptr_->prev_hash, block_ptr_->merkle_root[0], block_ptr_->verification_count, block_ptr_->merkle_tree, block_ptr_->verification_log, block_ptr_->model, block_ptr_->firmware_version, block_ptr_->verifier);
+		_size = block_ptr_->size;
+		_version = block_ptr_->version;
+		strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
+		_merkle_root[0] = block_ptr_->merkle_root[0];
+		_verification_count = block_ptr_->verification_count;
+		strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(block_ptr_->merkle_tree));
+		_merkle_tree[5] = '\0';
+		strncpy(_verification_log, block_ptr_->verification_log, sizeof(block_ptr_->verification_log));
+		_verification_log[5] = '\0';
+		strncpy(_model, block_ptr_->model, sizeof(block_ptr_->model));
+		_model[5] = '\0';
+		_firmware_version = block_ptr_->firmware_version;
+		strncpy(_verifier, block_ptr_->verifier, sizeof(block_ptr_->verifier));
+		
+		printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _verification_log, _model, _firmware_version, _verifier);
 		block_ptr_ = block_ptr_->ptr;
 	}
 	printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", i, block_ptr_->ptr, block_ptr_->size, block_ptr_->version, block_ptr_->prev_hash, block_ptr_->merkle_root[0], block_ptr_->verification_count, block_ptr_->merkle_tree, block_ptr_->verification_log, block_ptr_->model, block_ptr_->firmware_version, block_ptr_->verifier);
