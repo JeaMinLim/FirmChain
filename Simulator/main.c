@@ -22,6 +22,22 @@ int self_check(struct node NODE_INFO) {
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 
+int time_stamp() {
+    struct timeval val;
+    struct tm *ptm;
+	char tmp[10] = {0,};
+	int time = 0;
+
+    gettimeofday(&val, NULL);
+    ptm = localtime(&val.tv_sec);
+    // format : ssuuuuuu
+    sprintf(tmp, "%d%ld", ptm->tm_sec, val.tv_usec);
+	//tmp[6] = '\0';
+	time = atoi(tmp);
+	
+	return time;
+}
+
 void* remove_blockchain() {
 	struct block *ptr1;
 	struct block *ptr2;
@@ -30,12 +46,12 @@ void* remove_blockchain() {
 	ptr2 = ptr1->ptr;
 	
 	while(ptr1 != ptr2) {
-		printf(": free %p \n", ptr1);
+		//printf(": free %p \n", ptr1);
 		free(ptr1);
 		ptr1 = ptr2;
 		ptr2 = ptr2->ptr;
 	}
-	printf(": free %p \n", ptr1);
+	//printf(": free %p \n", ptr1);
 	free(ptr1);
 }
 
@@ -56,7 +72,7 @@ struct block *create_block(float _size, int _version, char *_prev_hash, int _mer
 	return BLOCK_;
 }
 
-int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) { 
+int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, int _verification_log, char *_model, int _firmware_version, char *_verifier, int _node_request, int _node_respon) { 
 	// for adding blocks at the bockchain //
 	struct block *BLOCK_ = malloc(sizeof(struct block));
 	//printf("::::: ADD_BLOCK \n");
@@ -68,7 +84,13 @@ int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int
 	BLOCK_->verification_count = _verification_count;
 	//strncpy(BLOCK_->merkle_tree, "_merkle_tree", sizeof(BLOCK_->merkle_tree));
 	strncpy(BLOCK_->merkle_tree, "-", sizeof(BLOCK_->merkle_tree));
-	strncpy(BLOCK_->verification_log, "-", sizeof(BLOCK_->verification_log));
+	// verification_log[0] = timestemp
+	// verification_log[1] = requester`s ID
+	// verification_log[2] = responser`s ID
+	BLOCK_->verification_log[0] = time_stamp();
+	BLOCK_->verification_log[1] = _node_request;
+	BLOCK_->verification_log[2] = _node_respon;
+	//strncpy(BLOCK_->verification_log, "-", sizeof(BLOCK_->verification_log));
 	strncpy(BLOCK_->model, _model, sizeof(BLOCK_->model));
 	//printf("_firmware_version: %d \n", _firmware_version);
 	BLOCK_->firmware_version = _firmware_version;
@@ -115,11 +137,11 @@ int version_check(struct node *local, struct node *remote) {
 		//printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
 		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
-		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier);
+		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier, num_local, num_remote);
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
 		//void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier)
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-		add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
+		//add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
 		//printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
 		request_flag[num_local] = 0;
 		request_flag[num_remote] = 0;
@@ -163,10 +185,18 @@ void print_Blockchain() {
 	_merkle_root[0] = block_ptr_->merkle_root[0];
 	int _verification_count = block_ptr_->verification_count;
 	char _merkle_tree[50];
-	strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(_merkle_tree));
-	_merkle_tree[5] = '\0';
-	char _verification_log[50];
-	strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
+	//strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(_merkle_tree));
+	strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
+	_merkle_tree[2] = '\0';
+	//char _verification_log[50];
+	// verification_log[0] = timestemp
+	// verification_log[1] = requester`s ID
+	// verification_log[2] = responser`s ID
+	unsigned int _verification_log[3];
+	_verification_log[0] = block_ptr_->verification_log[0];
+	_verification_log[1] = block_ptr_->verification_log[1];
+	_verification_log[2] = block_ptr_->verification_log[2];
+	//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
 	_verification_log[5] = '\0';
 	char _model[50];
 	strncpy(_model, block_ptr_->model, sizeof(_model));
@@ -176,7 +206,7 @@ void print_Blockchain() {
 	strncpy(_verifier, block_ptr_->verifier, sizeof(_verifier));
 	
 	///////////////////////
-	printf("::: - GENESIS block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _verification_log, _model, _firmware_version, _verifier);
+	printf("::: - GENESIS block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
 	block_ptr_ = block_ptr_->ptr;
 	while(block_ptr_ != block_ptr_->ptr) {
 		i++;
@@ -185,19 +215,27 @@ void print_Blockchain() {
 		strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
 		_merkle_root[0] = block_ptr_->merkle_root[0];
 		_verification_count = block_ptr_->verification_count;
-		strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(block_ptr_->merkle_tree));
-		_merkle_tree[5] = '\0';
-		strncpy(_verification_log, block_ptr_->verification_log, sizeof(block_ptr_->verification_log));
+		strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
+		_merkle_tree[2] = '\0';
+		// verification_log[0] = timestemp
+		// verification_log[1] = requester`s ID
+		// verification_log[2] = responser`s ID
+		_verification_log[0] = block_ptr_->verification_log[0];
+		_verification_log[1] = block_ptr_->verification_log[1];
+		_verification_log[2] = block_ptr_->verification_log[2];
+		//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
 		_verification_log[5] = '\0';
 		strncpy(_model, block_ptr_->model, sizeof(block_ptr_->model));
 		_model[5] = '\0';
 		_firmware_version = block_ptr_->firmware_version;
 		strncpy(_verifier, block_ptr_->verifier, sizeof(block_ptr_->verifier));
 		
-		printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _verification_log, _model, _firmware_version, _verifier);
+		//printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
+		printf("::: - %d block - time: %d, req: %d, resp: %d - %s, %d, %s \n", i, _verification_log[0], _verification_log[1], _verification_log[2], _model, _firmware_version, _verifier);
+		//printf("::: \t\t time: %d, req: %d, resp: %d - \n", );
 		block_ptr_ = block_ptr_->ptr;
 	}
-	printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %s, %d, %s \n", i, block_ptr_->ptr, block_ptr_->size, block_ptr_->version, block_ptr_->prev_hash, block_ptr_->merkle_root[0], block_ptr_->verification_count, block_ptr_->merkle_tree, block_ptr_->verification_log, block_ptr_->model, block_ptr_->firmware_version, block_ptr_->verifier);
+	//printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
 }
 
 struct node *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
@@ -222,9 +260,7 @@ int check_req_version_chk() {
 		//} else {
 		//	return 0;
 		//}
-		if(request_flag[i] != 0 )
-			return i;
-		
+		if(request_flag[i] != 0 ) return i;	
 	} 
 	return 0;
 }
@@ -273,9 +309,7 @@ int main() {
 	//printf(":::: = %d\n", block_ptr->version);
 	//////
 	////// FOR DEBUGING BLOCKCHAINS //
-
 	//print_Blockchain();
-	
 	// create node info //
 	/*
 	strncpy(INFO.name, "INFOMATION\0", sizeof(INFO.name));
@@ -289,7 +323,6 @@ int main() {
 	//printf(":: name-%s, model-%s, ver/hash-%s\n", INFO->name, INFO->model_name, INFO->firmware_version);
 	
 	// create nodes //
-	
 	for(int i=0; i<MAX_NODE; i++) {
 		sprintf(tmp, "%d", i);
 		DEVICE_info[i] = create_node(tmp, "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
