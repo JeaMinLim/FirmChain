@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define MAX_NODE_ 7
-const int MAX_NODE=7;
+const int MAX_NODE = 7;
 const int VICTIM_NODE = 6;
 
 struct node *INFO;
