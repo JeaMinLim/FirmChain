@@ -22,8 +22,26 @@ int self_check(struct node NODE_INFO) {
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 
-int verify_firmware(struct node *_node) {
+int verify_firmware(struct node *_checking_node) {
+	// 만약 블록체인에 있는 responsed 에 6번 이상 같은 번호가 있으면 인증됨.
+	int _node_id = atoi(_checking_node->name);
+	//printf("::: verify_firmware - %d \n", _node_id);
+	//struct block *_tmp = malloc(sizeof(struct block));
+	int count = 0;
 	
+	block_ptr = GENESIS;
+	while(block_ptr != block_ptr->ptr) {
+		block_ptr = block_ptr->ptr;
+		if(block_ptr->verification_log[2] == _node_id) {
+			count++;
+		}
+	}
+	//printf("::: verify_firmware - %d node verify count is %d \n", _node_id, count);
+	if(count >= 6) {
+		printf("::: node %d is verified \n", _node_id);
+	}
+	
+	return 0;
 }
 
 int time_stamp() {
@@ -138,7 +156,7 @@ int version_check(struct node *local, struct node *remote) {
 	int num_remote = atoi(remote->name);
 	
 	if (version_local == version_remote) {
-		printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
+		//printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
 		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
 		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier, num_local, num_remote);
@@ -154,19 +172,19 @@ int version_check(struct node *local, struct node *remote) {
 		return 0;
 	} else {
 		if (version_local < version_remote) {
-			printf(":: VERSION_CHECK - firmware update: local\n");
+			//printf(":: VERSION_CHECK - firmware update: local\n");
 			firmware_update(remote, local);
 			if (version_check(local, remote) == 0 ) {
-				printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
+				//printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
 				version_check(remote, local);
 			}
 			lock = 0;
 			return -1;
 		} else if (version_local > version_remote) {
-			printf(":: VERSION_CHECK - firmware update: remote\n");
+			//printf(":: VERSION_CHECK - firmware update: remote\n");
 			firmware_update(local, remote);
 			if (version_check(remote, local) == 0 ) {
-				printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
+				//printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
 				version_check(local, remote);
 			}
 			lock = 0;
@@ -298,7 +316,7 @@ void* t_function(void *_data) {
 	char tmp[4];
 	int thr_num = atoi(NODE_info_->name);
 	strncpy(tmp, NODE_info_->firmware_version, sizeof(NODE_info_->firmware_version));
-	printf(":::- thread %d is version %d \n", thr_num, atoi(tmp));
+	//printf(":::- thread %d is version %d \n", thr_num, atoi(tmp));
 	
 	while(lock !=0) {
 		//printf(":::- thread %d sleep!!!!!! \n", thr_num);
@@ -308,13 +326,13 @@ void* t_function(void *_data) {
 		// 공격 노드일 경우
 		// 1. 펌웨어 업데이트 체크
 		// 2. 펌웨어 인증 수행
-		printf(":::- thread thr_num != VICTIM_NODE \n");
+		//printf(":::- thread thr_num != VICTIM_NODE \n");
 		version_check(NODE_info_, DEVICE_info[VICTIM_NODE]);
 			
 	} else {
 		// 자기가 Victim 스레드 일 경우
 		// 자기 검증을 수행하지 않도록 예외처리
-		printf(":::- thread else \n");
+		//printf(":::- thread else \n");
 		int _remote_node = check_req_version_chk();
 		if(thr_num != _remote_node) {
 			version_check(NODE_info_, DEVICE_info[_remote_node]);
@@ -391,9 +409,11 @@ int main() {
 		if(i != VICTIM_NODE) {
 			select_attacker(DEVICE_info[i]);
 		}
-		printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
+		//printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
 		
 	}
+	printf("::: create %d threads \n", MAX_NODE-1);
+	
 	if (thread_id < 0) {
         perror("thread create error : ");
         exit(0);
@@ -442,6 +462,7 @@ int main() {
 	//pthread_join(p_thread[0], (void **)&status);
     //pthread_join(p_thread[1], (void **)&status);
 
+	verify_firmware(DEVICE_info[MAX_NODE]);
 	print_Blockchain();
 	remove_blockchain();
 	
