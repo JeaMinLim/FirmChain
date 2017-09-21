@@ -134,7 +134,7 @@ int version_check(struct node *local, struct node *remote) {
 	int num_remote = atoi(remote->name);
 	
 	if (version_local == version_remote) {
-		//printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
+		printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
 		// local create block for remote
 		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
 		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier, num_local, num_remote);
@@ -144,24 +144,24 @@ int version_check(struct node *local, struct node *remote) {
 		//add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
 		//printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
 		request_flag[num_local] = 0;
-		request_flag[num_remote] = 0;
+		//request_flag[num_remote] = 0;
 		
 		lock = 0;
 		return 0;
 	} else {
 		if (version_local < version_remote) {
-			//printf(":: VERSION_CHECK - firmware update: local\n");
+			printf(":: VERSION_CHECK - firmware update: local\n");
 			firmware_update(remote, local);
 			if (version_check(local, remote) == 0 ) {
-				//printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
+				printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
 			}
 			lock = 0;
 			return -1;
 		} else if (version_local > version_remote) {
-			//printf(":: VERSION_CHECK - firmware update: remote\n");
+			printf(":: VERSION_CHECK - firmware update: remote\n");
 			firmware_update(local, remote);
 			if (version_check(remote, local) == 0 ) {
-				//printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
+				printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
 			}
 			lock = 0;
 			return 1;
@@ -235,7 +235,28 @@ void print_Blockchain() {
 		//printf("::: \t\t time: %d, req: %d, resp: %d - \n", );
 		block_ptr_ = block_ptr_->ptr;
 	}
-	//printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
+	
+	i++;
+	_size = block_ptr_->size;
+	_version = block_ptr_->version;
+	strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
+	_merkle_root[0] = block_ptr_->merkle_root[0];
+	_verification_count = block_ptr_->verification_count;
+	strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
+	_merkle_tree[2] = '\0';
+	// verification_log[0] = timestemp
+	// verification_log[1] = requester`s ID
+	// verification_log[2] = responser`s ID
+	_verification_log[0] = block_ptr_->verification_log[0];
+	_verification_log[1] = block_ptr_->verification_log[1];
+	_verification_log[2] = block_ptr_->verification_log[2];
+	//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
+	_verification_log[5] = '\0';
+	strncpy(_model, block_ptr_->model, sizeof(block_ptr_->model));
+	_model[5] = '\0';
+	_firmware_version = block_ptr_->firmware_version;
+	strncpy(_verifier, block_ptr_->verifier, sizeof(block_ptr_->verifier));
+	printf("::: - %d block - time: %d, req: %d, resp: %d - %s, %d, %s \n", i, _verification_log[0], _verification_log[1], _verification_log[2], _model, _firmware_version, _verifier);
 }
 
 struct node *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
@@ -250,7 +271,7 @@ struct node *create_node(char *_name, char *_model_name, char *_firmware_version
 int check_req_version_chk() {
 	//printf("::: ! req_version_check, ");
 	//for(int i = 0; i < MAX_NODE; i++) {
-		//printf(" %d", request_flag[i]);
+	//	//printf(" %d", request_flag[i]);
 	//}
 	//printf(" \n");
 	
@@ -260,8 +281,9 @@ int check_req_version_chk() {
 		//} else {
 		//	return 0;
 		//}
-		if(request_flag[i] != 0 ) return i;	
-	} 
+		if(request_flag[i] != 0 ) 
+			return i;	
+	}
 	return 0;
 }
 
@@ -270,12 +292,27 @@ void* t_function(void *_data) {
 	char tmp[4];
 	int thr_num = atoi(NODE_info_->name);
 	strncpy(tmp, NODE_info_->firmware_version, sizeof(NODE_info_->firmware_version));
-	//printf(":::- thread %d is version %d \n", thr_num, atoi(tmp));
+	printf(":::- thread %d is version %d \n", thr_num, atoi(tmp));
 	
 	while(lock !=0) {
-		printf(":::- thread %d sleep!!!!!! \n", thr_num);
+		//printf(":::- thread %d sleep!!!!!! \n", thr_num);
 		sleep(1);
 	}
+	if (thr_num != VICTIM_NODE) {
+		// 공격 노드일 경우
+		// 1. 펌웨어 업데이트 체크
+		// 2. 펌웨어 인증 수행
+		version_check(NODE_info_, DEVICE_info[VICTIM_NODE]);
+			
+	} else {
+		// 자기가 Victim 스레드 일 경우
+		// 자기 검증을 수행하지 않도록 예외처리
+		int _remote_node = check_req_version_chk();
+		if(thr_num != _remote_node) {
+			version_check(NODE_info_, DEVICE_info[_remote_node]);
+		}
+	}
+	/*
 	if (check_req_version_chk() == 0) {
 		//printf("::: setting thread %d as chk req\n", thr_num);
 		request_flag[thr_num] = 1;
@@ -284,6 +321,7 @@ void* t_function(void *_data) {
 		//printf(":::: version check - thr %d req to %d \n", thr_num, check_req_version_chk() );
 		version_check(DEVICE_info[thr_num], DEVICE_info[check_req_version_chk()]);
 	}
+	*/
 	/*
 	for(int i = 0; i<10; i++) {
 		printf(":::- thread %s is version %d \n", NODE_info_->name, atoi(tmp));
@@ -324,6 +362,7 @@ int main() {
 	
 	// create nodes //
 	for(int i=0; i<MAX_NODE; i++) {
+		
 		sprintf(tmp, "%d", i);
 		DEVICE_info[i] = create_node(tmp, "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
 		//strncpy(DEVICE_info[i].name, tmp, sizeof(DEVICE_info[i].name));
@@ -338,11 +377,12 @@ int main() {
 	//int tmp_max_node = 2;
 	//pthread_t p_thread[tmp_max_node];
 	for(int i=0; i<MAX_NODE; i++) {
+		//sleep(1);
 		thread_id = pthread_create(&p_thread[i], NULL, t_function, (void *)DEVICE_info[i]);
 		if(i != VICTIM_NODE) {
 			select_attacker(DEVICE_info[i]);
 		}
-		//printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
+		printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
 		
 	}
 	if (thread_id < 0) {
@@ -350,7 +390,7 @@ int main() {
         exit(0);
     }
 	printf("::: VICTIM is %d\n", VICTIM_NODE);
-	
+
 	///////////////////////////////////////
 	for(int i=0; i<MAX_NODE; i++) {
 		pthread_join(p_thread[i], (void **)&status);

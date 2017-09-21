@@ -9,7 +9,7 @@
 
 #define MAX_NODE_ 7
 const int MAX_NODE = 7;
-const int VICTIM_NODE = 6;
+const int VICTIM_NODE = 0;
 
 struct node *INFO;
 struct block *block_ptr;
@@ -30,7 +30,7 @@ struct block {
 	// verification_log[0] = timestemp
 	// verification_log[1] = requester`s ID
 	// verification_log[2] = responser`s ID
-	unsigned int verification_log[3];
+	int verification_log[3];
 	char model[4];
 	int firmware_version;
 	char verifier[32];
