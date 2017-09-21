@@ -22,6 +22,10 @@ int self_check(struct node NODE_INFO) {
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 
+int verify_firmware(struct node *_node) {
+	
+}
+
 int time_stamp() {
     struct timeval val;
     struct tm *ptm;
@@ -143,7 +147,7 @@ int version_check(struct node *local, struct node *remote) {
 		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
 		//add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
 		//printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
-		request_flag[num_local] = 0;
+		//request_flag[num_local] = 0;
 		//request_flag[num_remote] = 0;
 		
 		lock = 0;
@@ -154,6 +158,7 @@ int version_check(struct node *local, struct node *remote) {
 			firmware_update(remote, local);
 			if (version_check(local, remote) == 0 ) {
 				printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
+				version_check(remote, local);
 			}
 			lock = 0;
 			return -1;
@@ -162,6 +167,7 @@ int version_check(struct node *local, struct node *remote) {
 			firmware_update(local, remote);
 			if (version_check(remote, local) == 0 ) {
 				printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
+				version_check(local, remote);
 			}
 			lock = 0;
 			return 1;
@@ -302,14 +308,17 @@ void* t_function(void *_data) {
 		// 공격 노드일 경우
 		// 1. 펌웨어 업데이트 체크
 		// 2. 펌웨어 인증 수행
+		printf(":::- thread thr_num != VICTIM_NODE \n");
 		version_check(NODE_info_, DEVICE_info[VICTIM_NODE]);
 			
 	} else {
 		// 자기가 Victim 스레드 일 경우
 		// 자기 검증을 수행하지 않도록 예외처리
+		printf(":::- thread else \n");
 		int _remote_node = check_req_version_chk();
 		if(thr_num != _remote_node) {
 			version_check(NODE_info_, DEVICE_info[_remote_node]);
+			version_check(DEVICE_info[_remote_node], NODE_info_);
 		}
 	}
 	/*
