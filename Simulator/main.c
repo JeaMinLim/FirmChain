@@ -39,6 +39,8 @@ int verify_firmware(struct node *_checking_node) {
 	//printf("::: verify_firmware - %d node verify count is %d \n", _node_id, count);
 	if(count >= 6) {
 		printf("::: node %d is verified \n", _node_id);
+	} else {
+		printf("::: node %d is not verified \n", _node_id);
 	}
 	
 	return 0;
