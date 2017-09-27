@@ -15,22 +15,17 @@ struct node *INFO;
 struct block *block_ptr;
 struct node *DEVICE_info[MAX_NODE_];
 
-struct block {
+struct block_v1 {
 	// Header Start //
 	struct block *ptr;
 	float size;	
 	int version;
 	char prev_hash[32];
-	int merkle_root[8];
+	time_t time;
+	int difficalty;
+	int nonce;
+	int type;
 	// Header end //
-	int verification_count;
-	char merkle_tree[4];
-	// verification log //
-	// timestemp, requester`s ID, responser`s ID, 
-	// verification_log[0] = timestemp
-	// verification_log[1] = requester`s ID
-	// verification_log[2] = responser`s ID
-	int verification_log[3];
 	char model[4];
 	int firmware_version;
 	char verifier[32];
@@ -41,5 +36,10 @@ struct node {
 	char model_name[4];
 	char firmware_version[4];
 	char verifier[32];
+	int versioncheck_request;
+};
+
+struct manager {
+	char name[20];
 	int versioncheck_request;
 };

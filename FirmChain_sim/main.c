@@ -1,24 +1,5 @@
 #include "header.h"
 
-/*
-int self_check(struct node NODE_INFO) {
-	if (strncmp(NODE_INFO.model_name, INFO.model_name, sizeof(INFO.model_name-1))) {
-		printf(":: SELF_CHECK - Firmware Info is changed, model_name\n");
-		return 1;
-	}
-	if (strncmp(NODE_INFO.firmware_version, INFO.firmware_version, sizeof(INFO.firmware_version-1))) {
-		printf(":: SELF_CHECK - Firmware Info is changed, firmware_version\n");
-		return 1;
-	}
-	if (strncmp(NODE_INFO.verifier, INFO.verifier, sizeof(INFO.verifier-1))) {
-		printf(":: SELF_CHECK - Firmware Info is changed, verifier\n");
-		return 1;
-	}
-	printf(":: SELF_CHECK - Firmware Info is NOT changed\n");
-	return 0;
-}
-*/
-
 int request_flag[MAX_NODE_] = {0,};
 int lock = 0;
 

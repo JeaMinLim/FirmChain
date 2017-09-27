@@ -1,6 +1,6 @@
-simulation : main.o
+Firmchain_sim : main.o
 	gcc -o simulation main.o -lpthread
-	./simulation
+	./Firmchain_sim
 
 main.o : 
 	gcc -c -o main.o main.c 
