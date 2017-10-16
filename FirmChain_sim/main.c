@@ -27,11 +27,12 @@ void remote_hashchain() {
 	struct hashchain *ptr_2;
 	
 	ptr_1 = GENESIS_HASH;
-	ptr_2 = ptr_1->_ptr;
+	ptr_2 = ptr_1->ptr;
+
 	while(ptr_1 != ptr_2) {
 		free(ptr_1);
 		ptr_1 = ptr_2;
-		ptr_2 = ptr_2->_ptr;
+		ptr_2 = ptr_2->ptr;
 	}
 	free(ptr_1);
 }
@@ -71,23 +72,36 @@ void *create_block(float _size, int _version, char *_prev_hash, time_t _time, in
 }
 
 void *create_hash(struct block_v1 *_blocks) {
-	struct hashchain *_hashchain = (void *)malloc(sizeof(_hashchain));
+	struct hashchain *HASH_ = malloc(sizeof(struct hashchain));
 	
-	BYTE buf[SHA256_BLOCK_SIZE];
+	//memset(_hashchain, 0, (sizeof(_hashchain)));
+	
+	unsigned char buf[SHA256_BLOCK_SIZE];
 	memset(&buf, '\0', sizeof(buf) );
+	memset(HASH_, '\0', sizeof(struct hashchain));
 	SHA256_CTX ctx;
 	
 	sha256_init(&ctx);
-	sha256_update(&ctx, _blocks, strlen(_blocks));
 	sha256_final(&ctx, buf);
-	memcpy(_hashchain->hash, buf, sizeof(buf));
+	//print_hash(buf);
+	//printf("::: %p \n", HASH_);
 	
-	_hashchain->_ptr = _hashchain;
-	//printf("::: init: %x, %p, %p \n", buf, _hashchain, _hashchain->_ptr);
+	memcpy(HASH_->hash, buf, sizeof(buf));
+	//print_hash(HASH_->hash);
 	
-	return _hashchain;
+	HASH_->ptr = HASH_;
+	printf("::: init: %p, %p \n", HASH_, HASH_->ptr);
+	
+	return HASH_;
 }
 
+void print_hash(unsigned char hash[])
+{
+   int idx;
+   for (idx=0; idx < 32; idx++)
+      printf("%02x",hash[idx]);
+   //printf("\n");
+}
 
 /*
 int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, int _verification_log, char *_model, int _firmware_version, char *_verifier, int _node_request, int _node_respon) { 
@@ -198,7 +212,9 @@ void print_Blockchain() {
 	int i = 0;
 	struct block_v1 *block_ptr_;
 	block_ptr_ = GENESIS;
-	
+	struct hashchain *blockhash_ptr_;
+	blockhash_ptr_ = GENESIS_HASH;
+		
 	// print GENESIS Block	
 	float _size = block_ptr_->size;
 	int _version = block_ptr_->version;
@@ -215,7 +231,11 @@ void print_Blockchain() {
 	char _verifier[50];
 	strncpy(_verifier, block_ptr_->verifier, sizeof(_verifier));
 	
-	printf("::: - GENESIS block: %p, %f, %d, %s\n", block_ptr_->ptr, _size, _version, _prev_hash);
+	printf("::: - GENESIS block: ");
+	print_hash(GENESIS_HASH->hash);
+	printf(" %p, %f, %d, %s\n", block_ptr_->ptr, _size, _version, _prev_hash);
+	
+	
 	
 	//SHA256_CTX _hash;
 	//printf("%x \n", _hash); 
@@ -443,7 +463,7 @@ int main() {
 		pthread_join(MANAGER_thread[i], (void **)&MANAGER_status);
 	}
 	
-	//print_Blockchain();
+	print_Blockchain();
 	remove_blockchain();
 	remote_hashchain();
 	

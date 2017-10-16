@@ -38,8 +38,8 @@ struct block_v1 {
 } *GENESIS;
 
 struct hashchain {
-	BYTE hash[SHA256_BLOCK_SIZE];
-	struct hashchain *_ptr;
+	unsigned char hash[SHA256_BLOCK_SIZE];
+	struct hashchain *ptr;
 } *GENESIS_HASH;
 
 struct node {
