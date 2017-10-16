@@ -1,55 +1,17 @@
 #include "header.h"
 
 int request_flag[MAX_NODE_] = {0,};
-int lock = 0;
-
-int verify_firmware(struct node *_checking_node) {
-	// 만약 블록체인에 있는 responsed 에 6번 이상 같은 번호가 있으면 인증됨.
-	int _node_id = atoi(_checking_node->name);
-	//printf("::: verify_firmware - %d \n", _node_id);
-	//struct block *_tmp = malloc(sizeof(struct block));
-	int count = 0;
-	
-	block_ptr = GENESIS;
-	while(block_ptr != block_ptr->ptr) {
-		block_ptr = block_ptr->ptr;
-		if(block_ptr->verification_log[2] == _node_id) {
-			count++;
-		}
-	}
-	//printf("::: verify_firmware - %d node verify count is %d \n", _node_id, count);
-	if(count >= 6) {
-		printf("::: node %d is verified \n", _node_id);
-	} else {
-		printf("::: node %d is not verified \n", _node_id);
-	}
-	
-	return 0;
-}
-
-int time_stamp() {
-    struct timeval val;
-    struct tm *ptm;
-	char tmp[10] = {0,};
-	int time = 0;
-
-    gettimeofday(&val, NULL);
-    ptm = localtime(&val.tv_sec);
-    // format : ssuuuuuu
-    sprintf(tmp, "%d%ld", ptm->tm_sec, val.tv_usec);
-	//tmp[6] = '\0';
-	time = atoi(tmp);
-	
-	return time;
-}
+int LOCK_MANAGER = 0;
+int LOCK_NODE = 0;
+int blockcount = 0;
+const int LOCAL_NODE = 0;
+const int REMOTE_NODE = 1;
 
 void* remove_blockchain() {
-	struct block *ptr1;
-	struct block *ptr2;
-	
+	struct block_v1 *ptr1;
+	struct block_v1 *ptr2;
 	ptr1 = GENESIS;
 	ptr2 = ptr1->ptr;
-	
 	while(ptr1 != ptr2) {
 		//printf(": free %p \n", ptr1);
 		free(ptr1);
@@ -60,23 +22,74 @@ void* remove_blockchain() {
 	free(ptr1);
 }
 
-struct block *create_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier) {
+void remote_hashchain() {
+	struct hashchain *ptr_1;
+	struct hashchain *ptr_2;
+	
+	ptr_1 = GENESIS_HASH;
+	ptr_2 = ptr_1->_ptr;
+	while(ptr_1 != ptr_2) {
+		free(ptr_1);
+		ptr_1 = ptr_2;
+		ptr_2 = ptr_2->_ptr;
+	}
+	free(ptr_1);
+}
+
+void *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
+	struct node *NODE_ = (struct node*)malloc(sizeof(struct node));
+	//memcpy(NODE_->name, _name, strlen(_name));
+	//strncpy(NODE_->name, _name, sizeof(_name));
+	strncpy(NODE_->model_name, _model_name, sizeof(NODE_->model_name));
+	strncpy(NODE_->firmware_version, _firmware_version, sizeof(NODE_->firmware_version));
+	strncpy(NODE_->verifier, _verifier, sizeof(NODE_->verifier));
+	return NODE_;
+}
+
+void *create_manager(char *_name) {
+	struct manager *MANAGER_ = (struct manager *)malloc(sizeof(struct manager ));
+	strncpy(MANAGER_->name, _name, sizeof(MANAGER_->name));
+	return MANAGER_;
+}
+
+void *create_block(float _size, int _version, char *_prev_hash, time_t _time, int _difficalty, int _nonce, int _type, char *_model, int _firmware_version, char *_verifier) {
 	// to create GENESIS BLOCK
-	struct block *BLOCK_ = malloc(sizeof(struct block));
+	struct block_v1 *BLOCK_ = malloc(sizeof(struct block_v1));
 	BLOCK_->size = _size;
 	BLOCK_->version = _version;
 	strncpy(BLOCK_->prev_hash, "GENESIS", sizeof(BLOCK_->prev_hash));
-	BLOCK_->merkle_root[0] = _merkle_root;
-	BLOCK_->verification_count = _verification_count;
-	strncpy(BLOCK_->merkle_tree, "-", sizeof(BLOCK_->merkle_tree));
-	strncpy(BLOCK_->verification_log, "-", sizeof(BLOCK_->merkle_tree));
+	BLOCK_->time = _time;
+	BLOCK_->difficalty = _difficalty;
+	BLOCK_->nonce = _nonce;
+	BLOCK_->type = _type;
 	strncpy(BLOCK_->model, "-", sizeof(BLOCK_->model));
 	BLOCK_->firmware_version = _firmware_version;
 	strncpy(BLOCK_->verifier, "-", sizeof(BLOCK_->verifier));
 	//BLOCK_->ptr = BLOCK_;
+
 	return BLOCK_;
 }
 
+void *create_hash(struct block_v1 *_blocks) {
+	struct hashchain *_hashchain = (void *)malloc(sizeof(_hashchain));
+	
+	BYTE buf[SHA256_BLOCK_SIZE];
+	memset(&buf, '\0', sizeof(buf) );
+	SHA256_CTX ctx;
+	
+	sha256_init(&ctx);
+	sha256_update(&ctx, _blocks, strlen(_blocks));
+	sha256_final(&ctx, buf);
+	memcpy(_hashchain->hash, buf, sizeof(buf));
+	
+	_hashchain->_ptr = _hashchain;
+	//printf("::: init: %x, %p, %p \n", buf, _hashchain, _hashchain->_ptr);
+	
+	return _hashchain;
+}
+
+
+/*
 int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, int _verification_log, char *_model, int _firmware_version, char *_verifier, int _node_request, int _node_respon) { 
 	// for adding blocks at the bockchain //
 	struct block *BLOCK_ = malloc(sizeof(struct block));
@@ -112,99 +125,89 @@ int add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int
 	//return (void *)BLOCK_;
 	return 0;
 }
-
+*/
+/*
 void select_attacker(struct node *data) {
 	strncpy(data->firmware_version, "1500", sizeof(data->firmware_version));
 }
 
-int firmware_update(struct node *from, struct node *to) {
+*/
+int firmware_update(int _from, int _to) {
 	//char * strncpy ( char * destination, const char * source, size_t num );
-	strncpy(to->firmware_version, from->firmware_version, sizeof(to->firmware_version));
+	strncpy(NODE_info[_to]->firmware_version, NODE_info[_from]->firmware_version, sizeof(NODE_info[_to]->firmware_version));
 }
 
-int version_check(struct node *local, struct node *remote) {
-	lock = 1;
+int version_check(int _local, int _remote) {
+	LOCK_NODE = 1;
 	char local_version[5];
 	char remote_version[5];
-	//printf(":: name: %s %s\n", local.firmware_version, remote.firmware_version);
-	//printf(":: local: %s remote: %s \n", local->name, remote->name);
-	strncpy(local_version, local->firmware_version, sizeof(local->firmware_version));
+	strncpy(local_version, NODE_info[_local]->firmware_version, sizeof( NODE_info[_local]->firmware_version));
 	local_version[5] = '\0';
-	strncpy(remote_version, remote->firmware_version, sizeof(remote->firmware_version));
+	strncpy(remote_version, NODE_info[_remote]->firmware_version, sizeof(NODE_info[_remote]->firmware_version));
 	remote_version[5] = '\0';
-	//printf(":: name: %s %s\n", local_version, remote_version);
 	int version_local = atoi(local_version);
 	int version_remote = atoi(remote_version);
-	int num_local = atoi(local->name);
-	int num_remote = atoi(remote->name);
+	//int num_local = atoi(local->name);
+	//int num_remote = atoi(remote->name);
+	int manager = NODE_info[_local]->manager_num;
 	
 	if (version_local == version_remote) {
-		//printf(":: VERSION_CHECK - firmware version is the same local is %d, remote is %d\n", num_local, num_remote);
-		// local create block for remote
-		//printf("version_local == version_remote %s, %s, %s \n", remote->model_name, remote_version, remote->verifier);
-		add_block(0.0, 1, '\0', 0, 0, '\0', '\0', remote->model_name, version_remote, remote->verifier, num_local, num_remote);
-		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-		//void* add_block(float _size, int _version, char *_prev_hash, int _merkle_root, int _verification_count, char *_merkle_tree, char *_verification_log, char *_model, int _firmware_version, char *_verifier)
-		//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-		//add_block(0, 1, '\0', 0, 0, '\0', '\0', local->model_name, version_remote, local->verifier);
-		//printf(":: VERSION_CHECK - unset %d, %d \n", num_local, num_remote);
-		//request_flag[num_local] = 0;
-		//request_flag[num_remote] = 0;
+		// request verification
+		// assume that remote info is arrived to local in this stage
+		//printf(":: VERSION_CHECK - firmware verificaiton request %d and %d \n", _local, _remote);
+		LOCK_MANAGER = 1;
+		// notify version check request to local`s manager
+		MANAGER_info[manager]->request_flag[LOCAL_NODE] = _local;
+		MANAGER_info[manager]->request_flag[REMOTE_NODE] = _remote;
+		//printf(":: VERSION_CHECK - firmware verificaiton request %d and %d \n", MANAGER_info[manager]->request_flag[LOCAL_NODE], MANAGER_info[manager]->request_flag[REMOTE_NODE]);
 		
-		lock = 0;
+		request_flag[_local] = 0;
+		request_flag[_remote] = 0;
+		
+		LOCK_MANAGER = 0;
+		LOCK_NODE = 0;
+		
 		return 0;
-	} else {
+		
+	} else { 
+		// In case Node need firmware update
 		if (version_local < version_remote) {
 			//printf(":: VERSION_CHECK - firmware update: local\n");
-			firmware_update(remote, local);
-			if (version_check(local, remote) == 0 ) {
+			firmware_update(_remote, _local);
+			if (version_check(_local, _remote) == 0 ) {
 				//printf(":: VERSION_CHECK - firmware update complite : FROM remote to local\n");
-				version_check(remote, local);
+				version_check(_remote, _local);
 			}
-			lock = 0;
+			LOCK_NODE = 0;
 			return -1;
 		} else if (version_local > version_remote) {
 			//printf(":: VERSION_CHECK - firmware update: remote\n");
-			firmware_update(local, remote);
-			if (version_check(remote, local) == 0 ) {
+			firmware_update(_local, _remote);
+			if (version_check(_remote, _local) == 0 ) {
 				//printf(":: VERSION_CHECK - firmware update complite : FROM local to remote\n");
-				version_check(local, remote);
+				version_check(_local, _remote);
 			}
-			lock = 0;
+			LOCK_NODE = 0;
 			return 1;
 		}
 	}
-	lock = 0;
 	return -2;	
 }
 
 void print_Blockchain() {
 	int i = 0;
-	struct block *block_ptr_;
+	struct block_v1 *block_ptr_;
 	block_ptr_ = GENESIS;
 	
-	// copy info from block // 
+	// print GENESIS Block	
 	float _size = block_ptr_->size;
 	int _version = block_ptr_->version;
 	char _prev_hash[50];
 	strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(_prev_hash));
-	int _merkle_root[50] = {0,};
-	_merkle_root[0] = block_ptr_->merkle_root[0];
-	int _verification_count = block_ptr_->verification_count;
-	char _merkle_tree[50];
-	//strncpy(_merkle_tree, block_ptr_->merkle_tree, sizeof(_merkle_tree));
-	strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
-	_merkle_tree[2] = '\0';
-	//char _verification_log[50];
-	// verification_log[0] = timestemp
-	// verification_log[1] = requester`s ID
-	// verification_log[2] = responser`s ID
-	unsigned int _verification_log[3];
-	_verification_log[0] = block_ptr_->verification_log[0];
-	_verification_log[1] = block_ptr_->verification_log[1];
-	_verification_log[2] = block_ptr_->verification_log[2];
-	//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
-	_verification_log[5] = '\0';
+	time_t _time = block_ptr_->time;
+	int _difficalty = block_ptr_->difficalty;
+	int _nonce = block_ptr_->nonce;
+	int _type = block_ptr_->type;
 	char _model[50];
 	strncpy(_model, block_ptr_->model, sizeof(_model));
 	_model[5] = '\0';
@@ -212,10 +215,18 @@ void print_Blockchain() {
 	char _verifier[50];
 	strncpy(_verifier, block_ptr_->verifier, sizeof(_verifier));
 	
-	///////////////////////
-	printf("::: - GENESIS block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
+	printf("::: - GENESIS block: %p, %f, %d, %s\n", block_ptr_->ptr, _size, _version, _prev_hash);
+	
+	//SHA256_CTX _hash;
+	//printf("%x \n", _hash); 
+	//memcpy(&_hash, block_ptr_->hash, sizeof(SHA256_CTX));
+	//printf("%x \n", _hash); 
+	
+	////////////////////////////////////
+		
 	block_ptr_ = block_ptr_->ptr;
 	while(block_ptr_ != block_ptr_->ptr) {
+		/*
 		i++;
 		_size = block_ptr_->size;
 		_version = block_ptr_->version;
@@ -241,39 +252,11 @@ void print_Blockchain() {
 		printf("::: - %d block - time: %d, req: %d, resp: %d - %s, %d, %s \n", i, _verification_log[0], _verification_log[1], _verification_log[2], _model, _firmware_version, _verifier);
 		//printf("::: \t\t time: %d, req: %d, resp: %d - \n", );
 		block_ptr_ = block_ptr_->ptr;
-	}
-	
-	i++;
-	_size = block_ptr_->size;
-	_version = block_ptr_->version;
-	strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
-	_merkle_root[0] = block_ptr_->merkle_root[0];
-	_verification_count = block_ptr_->verification_count;
-	strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
-	_merkle_tree[2] = '\0';
-	// verification_log[0] = timestemp
-	// verification_log[1] = requester`s ID
-	// verification_log[2] = responser`s ID
-	_verification_log[0] = block_ptr_->verification_log[0];
-	_verification_log[1] = block_ptr_->verification_log[1];
-	_verification_log[2] = block_ptr_->verification_log[2];
-	//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
-	_verification_log[5] = '\0';
-	strncpy(_model, block_ptr_->model, sizeof(block_ptr_->model));
-	_model[5] = '\0';
-	_firmware_version = block_ptr_->firmware_version;
-	strncpy(_verifier, block_ptr_->verifier, sizeof(block_ptr_->verifier));
-	printf("::: - %d block - time: %d, req: %d, resp: %d - %s, %d, %s \n", i, _verification_log[0], _verification_log[1], _verification_log[2], _model, _firmware_version, _verifier);
+		*/
+	}	
 }
 
-struct node *create_node(char *_name, char *_model_name, char *_firmware_version, char *_verifier) {
-	struct node *NODE_ = (struct node*)malloc(sizeof(struct node));
-	strncpy(NODE_->name, _name, sizeof(NODE_->name));
-	strncpy(NODE_->model_name, _model_name, sizeof(NODE_->model_name));
-	strncpy(NODE_->firmware_version, _firmware_version, sizeof(NODE_->firmware_version));
-	strncpy(NODE_->verifier, _verifier, sizeof(NODE_->verifier));
-	return NODE_;
-}
+/*
 
 int check_req_version_chk() {
 	//printf("::: ! req_version_check, ");
@@ -293,6 +276,8 @@ int check_req_version_chk() {
 	}
 	return 0;
 }
+*/
+/*
 
 void* t_function(void *_data) {
 	struct node *NODE_info_ = _data;
@@ -337,117 +322,130 @@ void* t_function(void *_data) {
 		printf(":::- thread %s is version %d \n", NODE_info_->name, atoi(tmp));
 	}
 	*/
+/*
+}
+*/
+void* NODE_function(struct node *_NODE_info) {
+	//printf("NODE_function\n");
+	sleep(1);
+	int thr_num = atoi(_NODE_info->name);
+	
+	srand(time(NULL));
+	int MY_MANAGER_NO = rand() % MAX_MANAGER;
+	_NODE_info->manager_num = MY_MANAGER_NO;
+	//printf("node %d manager is %d \n", thr_num, _NODE_info->manager_num);
+	// make firmware request
+	// check if there is requester
+	
+	while(LOCK_NODE == 1) {
+		//printf("::thr %d is spinning \n", thr_num);
+		sleep(1);
+	}
+	
+	for(int i = 0; i<MAX_NODE; i++) {
+		//printf("::thr %d is in for \n", thr_num);
+		if(i == thr_num) {
+			// just in case the node check by himself
+			continue;
+		}
+		if (request_flag[i] == 1) {
+			// verificaiton start 
+			//printf("::thr %d is version checking \n", thr_num);
+			version_check(thr_num, i);
+			break;
+		}
+		request_flag[thr_num] = 1;
+	}
+	
+	// firmware verification request to Manager // 
+	while (LOCK_MANAGER != 0) {
+		//checking lock
+		//printf("::thr %d spining in lockmanager \n", thr_num);
+		sleep(1);
+	}
 }
 
-int main() {
-	char tmp[10] = {0,};
+void* MANAGER_function(struct manager *_MANAGER_info) {
+	//printf("MANAGER_function\n");
+	sleep(3);
+	int _blockcount = 0;
+	int round = 0;
+	_MANAGER_info->request_flag[0] = -1;
+	_MANAGER_info->request_flag[1] = -1;
 	
-	//printf(": creating GENESIS Block \n");
-	
-	// creating genesis block //
-	GENESIS = create_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0');
-	GENESIS->ptr = GENESIS;
-	block_ptr = GENESIS;
-	//printf(": Genesis Block is ready \n");
-	
-	//block_ptr = add_block(0.1, 0, '\0', 0, 0, '\0', '\0', '\0', 0, '\0', block_ptr);
-	//block_ptr = GENESIS;
-	//printf(":::: = %d\n", block_ptr->version);
-	//block_ptr = block_ptr->ptr;
-	//printf(":::: = %d\n", block_ptr->version);
-	//////
-	////// FOR DEBUGING BLOCKCHAINS //
-	//print_Blockchain();
-	// create node info //
-	/*
-	strncpy(INFO.name, "INFOMATION\0", sizeof(INFO.name));
-	strncpy(INFO.model_name, "XU\0", sizeof(INFO.model_name));
-	strncpy(INFO.firmware_version, "1402", sizeof(INFO.firmware_version));
-	strncpy(INFO.verifier, "6c3d0216f7fd482cdac2aa054af61065", sizeof(INFO.verifier));
-	printf(":: name-%s, model-%s, ver/hash-%s\n", INFO.name, INFO.model_name, INFO.firmware_version);
-	*/
-	
-	INFO = create_node("INFOMATION\0", "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
-	//printf(":: name-%s, model-%s, ver/hash-%s\n", INFO->name, INFO->model_name, INFO->firmware_version);
-	
-	// create nodes //
-	for(int i=0; i<MAX_NODE; i++) {
-		
-		sprintf(tmp, "%d", i);
-		DEVICE_info[i] = create_node(tmp, "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
-		//strncpy(DEVICE_info[i].name, tmp, sizeof(DEVICE_info[i].name));
-	}
-		
-	//printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[0]->name, DEVICE_info[0]->model_name, DEVICE_info[0]->firmware_version);
-	//printf(":: name-%s, model-%s, ver/hash-%s\n", DEVICE_info[1]->name, DEVICE_info[1]->model_name, DEVICE_info[1]->firmware_version);
-
-	//////////////////////////////////////
-	int thread_id, status;
-	pthread_t p_thread[MAX_NODE];
-	//int tmp_max_node = 2;
-	//pthread_t p_thread[tmp_max_node];
-	for(int i=0; i<MAX_NODE; i++) {
-		//sleep(1);
-		thread_id = pthread_create(&p_thread[i], NULL, t_function, (void *)DEVICE_info[i]);
-		if(i != VICTIM_NODE) {
-			select_attacker(DEVICE_info[i]);
+	while (round != 5) {
+		if (blockcount != _blockcount) {
+			// assume block is made, knowtice newblock
+			_blockcount = blockcount;
+			//printf("::: New Block found \n");
 		}
-		//printf("::: Create Thread %d, name is %s \n", i, DEVICE_info[i]->name);
+		//printf("::: MANAGER %s: flag is %d, %d \n", _MANAGER_info->name ,_MANAGER_info->request_flag[0], _MANAGER_info->request_flag[1]);
+		while (LOCK_MANAGER == 1) {
+			sleep(1);
+		}
 		
+		if(_MANAGER_info->request_flag[0] >= 0) {
+		// calculate PoW
+			//printf("::: MANAGER %s: %d, and %d is verifying \n", _MANAGER_info->name ,_MANAGER_info->request_flag[0], _MANAGER_info->request_flag[1]);
+		}
+		round++;
+		sleep(1);
+		//printf("::: round : %d \n", round);
 	}
-	printf("::: create %d threads \n", MAX_NODE-1);
-	
-	if (thread_id < 0) {
-        perror("thread create error : ");
-        exit(0);
-    }
-	printf("::: VICTIM is %d\n", VICTIM_NODE);
+}	
 
-	///////////////////////////////////////
+int main() {
+	char tmp[3] = {0,};
+	
+	GENESIS = create_block(0.1, 1, '\0', 0, 0, 0, 0, '\0', 0, '\0');
+	GENESIS->ptr = GENESIS;
+	GENESIS_HASH = create_hash(GENESIS);
+	
+	block_ptr = GENESIS;
+	hash_ptr = GENESIS_HASH;
+		
+	printf(": Genesis Block is ready \n");
+	NODE_INFO = create_node("NODE", "XU", "1402", "6c3d0216f7fd482cdac2aa054af61065");
+	MANAGER_INFO = create_manager("MANAGER");
+	
 	for(int i=0; i<MAX_NODE; i++) {
-		pthread_join(p_thread[i], (void **)&status);
-		//printf("::: kill Thread %d \n", i);
+		sprintf(tmp, "%d", i);
+		tmp[2] = '\0';
+		NODE_info[i] = create_node(tmp, "XU\0", "1402", "6c3d0216f7fd482cdac2aa054af61065");
 	}
+	for(int i=0; i<MAX_MANAGER; i++) {
+		sprintf(tmp, "%d", i);
+		tmp[2] = '\0';
+		MANAGER_info[i] = create_manager(tmp);
+	}
+	
+	/////////////////////////////////////////////
+	/////////////////////////////////////////////
 		
-	//printf("::: request result = %d \n", request_check(DEVICE_info[0], DEVICE_info[1]));
-		
-	//////////////////////////////////////////////////////////////////
-	/*
-	int thread_id, status;
+	int NODE_thr_id, NODE_status, MANAGER_thr_id, MANAGER_status;
+	pthread_t NODE_thread[MAX_NODE], MANAGER_thread[MAX_MANAGER];
 	
-	int a = 100;
-	printf("::: Create Thread \n");
-	thread_id = pthread_create(&p_thread[0], NULL, t_function, (void *)&DEVICE_info[0]);
-	thread_id = pthread_create(&p_thread[1], NULL, t_function, (void *)&DEVICE_info[1]);
-    if (thread_id < 0) {
-        perror("thread create error : ");
-        exit(0);
-    }
+	for(int i=0; i<MAX_MANAGER; i++) {
+		MANAGER_thr_id = pthread_create(&MANAGER_thread[i], NULL, MANAGER_function, (void *)MANAGER_info[i]);
+	}
 	
-	pthread_join(p_thread[0], (void *) &status);
-	pthread_join(p_thread[1], (void *) &status);
-	*/
-	//////////////////////////////////////////////////////////////////
+	for(int i=0; i<MAX_NODE; i++) {
+		NODE_thr_id = pthread_create(&NODE_thread[i], NULL, NODE_function, (void *)NODE_info[i]);
+	} 
+	printf("::: create %d NODES \n", MAX_NODE);
+	printf("::: create %d MANAGERS \n", MAX_MANAGER);
 	
-	//self_check(DEVICE_info[0]);
-	//request_check(DEVICE_info[0], DEVICE_info[1]);
+	for(int i=0; i<MAX_NODE; i++) {
+		pthread_join(NODE_thread[i], (void **)&NODE_status);
+	}
 	
-	// delete list
-	/*
-	while (!SLIST_EMPTY(&BLOCKCHAIN_LIST)) { 
-		printf(": Delete List");
-    	GENESIS = SLIST_FIRST(&BLOCKCHAIN_LIST);
-        SLIST_REMOVE_HEAD(&BLOCKCHAIN_LIST, BLOCKCHAIN);
-        free(GENESIS);
-    }
-	*/
-	// end thread
-	//pthread_join(p_thread[0], (void **)&status);
-    //pthread_join(p_thread[1], (void **)&status);
-
-	verify_firmware(DEVICE_info[MAX_NODE]);
-	print_Blockchain();
+	for(int i=0; i<MAX_MANAGER; i++) {
+		pthread_join(MANAGER_thread[i], (void **)&MANAGER_status);
+	}
+	
+	//print_Blockchain();
 	remove_blockchain();
+	remote_hashchain();
 	
 	return 0;
 }
