@@ -90,7 +90,7 @@ void *create_hash(struct block_v1 *_blocks) {
 	//print_hash(HASH_->hash);
 	
 	HASH_->ptr = HASH_;
-	printf("::: init: %p, %p \n", HASH_, HASH_->ptr);
+	//printf("::: init: %p, %p \n", HASH_, HASH_->ptr);
 	
 	return HASH_;
 }
@@ -207,13 +207,24 @@ int version_check(int _local, int _remote) {
 	}
 	return -2;	
 }
+void print_binary(unsigned int integer_) {
+	unsigned int i = 32;
+	unsigned int num = integer_;
+	
+	printf("::::: num %d is ", num);
+	for(i; i>=0; --i) {
+		printf("%d", (num>>i) & 1 );
+	}
+	printf("\n ");
+}
 
 void print_Blockchain() {
-	int i = 0;
+	int block_num = 0;
 	struct block_v1 *block_ptr_;
+	struct hashchain *hash_ptr_;
 	block_ptr_ = GENESIS;
 	struct hashchain *blockhash_ptr_;
-	blockhash_ptr_ = GENESIS_HASH;
+	hash_ptr_ = GENESIS_HASH;
 		
 	// print GENESIS Block	
 	float _size = block_ptr_->size;
@@ -225,6 +236,7 @@ void print_Blockchain() {
 	int _nonce = block_ptr_->nonce;
 	int _type = block_ptr_->type;
 	char _model[50];
+	
 	strncpy(_model, block_ptr_->model, sizeof(_model));
 	_model[5] = '\0';
 	int _firmware_version = block_ptr_->firmware_version;
@@ -233,46 +245,26 @@ void print_Blockchain() {
 	
 	printf("::: - GENESIS block: ");
 	print_hash(GENESIS_HASH->hash);
-	printf(" %p, %f, %d, %s\n", block_ptr_->ptr, _size, _version, _prev_hash);
-	
-	
-	
-	//SHA256_CTX _hash;
-	//printf("%x \n", _hash); 
-	//memcpy(&_hash, block_ptr_->hash, sizeof(SHA256_CTX));
-	//printf("%x \n", _hash); 
-	
-	////////////////////////////////////
+	printf(", %p, %f, %d, %s\n", block_ptr_->ptr, _size, _version, _prev_hash);
 		
 	block_ptr_ = block_ptr_->ptr;
-	while(block_ptr_ != block_ptr_->ptr) {
-		/*
-		i++;
-		_size = block_ptr_->size;
-		_version = block_ptr_->version;
-		strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
-		_merkle_root[0] = block_ptr_->merkle_root[0];
-		_verification_count = block_ptr_->verification_count;
-		strncpy(_merkle_tree, "-", sizeof(_merkle_tree));
-		_merkle_tree[2] = '\0';
-		// verification_log[0] = timestemp
-		// verification_log[1] = requester`s ID
-		// verification_log[2] = responser`s ID
-		_verification_log[0] = block_ptr_->verification_log[0];
-		_verification_log[1] = block_ptr_->verification_log[1];
-		_verification_log[2] = block_ptr_->verification_log[2];
-		//strncpy(_verification_log, block_ptr_->verification_log, sizeof(_verification_log));
-		_verification_log[5] = '\0';
+	hash_ptr_ = hash_ptr_->ptr;
+	
+	while(block_ptr_ != block_ptr_->ptr && hash_ptr_!= hash_ptr_->ptr) {
+		block_num++;
+		//strncpy(_prev_hash, block_ptr_->prev_hash, sizeof(block_ptr_->prev_hash));
+		
 		strncpy(_model, block_ptr_->model, sizeof(block_ptr_->model));
 		_model[5] = '\0';
 		_firmware_version = block_ptr_->firmware_version;
 		strncpy(_verifier, block_ptr_->verifier, sizeof(block_ptr_->verifier));
 		
-		//printf("::: - %d block: %p, %f, %d, %s, %d, %d, %s, %s, %d, %s \n", i, block_ptr_->ptr, _size, _version, _prev_hash, _merkle_root[0], _verification_count, _merkle_tree, _model, _firmware_version, _verifier);
-		printf("::: - %d block - time: %d, req: %d, resp: %d - %s, %d, %s \n", i, _verification_log[0], _verification_log[1], _verification_log[2], _model, _firmware_version, _verifier);
-		//printf("::: \t\t time: %d, req: %d, resp: %d - \n", );
+		printf("::: - %d block: ", block_num);
+		print_hash(hash_ptr_->hash);
+		printf("%s, %d, %s \n", _model, _firmware_version, _verifier);
+		
 		block_ptr_ = block_ptr_->ptr;
-		*/
+		hash_ptr_ = hash_ptr_->ptr;
 	}	
 }
 
@@ -464,8 +456,9 @@ int main() {
 	}
 	
 	print_Blockchain();
-	remove_blockchain();
-	remote_hashchain();
+	//print_binary(10);
+	//remove_blockchain();
+	//remote_hashchain();
 	
 	return 0;
 }
